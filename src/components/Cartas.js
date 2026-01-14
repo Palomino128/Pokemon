@@ -9,11 +9,16 @@ const Cartas = () => {
     const [gameStarted, setGameStarted] = useState(false);
     const [loadingImages, setLoadingImages] = useState(false);
     const [selectedPokemons, setSelectedPokemons] = useState([]);
-    const [gameTime, setGameTime] = useState(0);
+    const [gameTime, setGameTime] = useState(300); // 5 minutos en segundos
     const [isTimerRunning, setIsTimerRunning] = useState(false);
-    const [score, setScore] = useState(0); // Puntuación que se acumula durante el juego
+    const [score, setScore] = useState(0);
+    const [gameCompleted, setGameCompleted] = useState(false);
+    const [currentTheme, setCurrentTheme] = useState({
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: '#667eea'
+    });
 
-    // Lista de Pokémon populares y confiables (primeras generaciones)
+    // Lista de Pokémon populares y confiables
     const POPULAR_POKEMON_IDS = [
         1, 4, 7, 25, 133, 39, 52, 16, 19, 129,
         150, 151, 6, 9, 3, 94, 143, 131, 149, 130,
@@ -72,6 +77,7 @@ const Cartas = () => {
 
             console.log("✅ Pokémon cargados exitosamente:", successfulPokemons.map(p => p.name));
 
+            // Si no hay suficientes Pokémon, agregar de respaldo
             if (successfulPokemons.length < count) {
                 console.log("⚠️ No hay suficientes Pokémon, agregando de respaldo...");
                 const backupPokemons = [
@@ -97,6 +103,7 @@ const Cartas = () => {
         } catch (error) {
             console.error('Error fetching random Pokémon:', error);
             
+            // Pokémon de respaldo en caso de error
             const backupPokemons = [
                 { name: "pikachu", image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", id: 25 },
                 { name: "bulbasaur", image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png", id: 1 },
@@ -115,68 +122,124 @@ const Cartas = () => {
     // Timer del juego
     useEffect(() => {
         let interval;
-        if (isTimerRunning) {
+        if (isTimerRunning && gameTime > 0) {
             interval = setInterval(() => {
-                setGameTime(prevTime => prevTime + 1);
+                setGameTime(prevTime => {
+                    if (prevTime <= 1) {
+                        setIsTimerRunning(false);
+                        setGameCompleted(true);
+                        return 0;
+                    }
+                    return prevTime - 1;
+                });
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [isTimerRunning]);
+    }, [isTimerRunning, gameTime]);
+
+    // Cargar juego guardado del localStorage al iniciar
+    useEffect(() => {
+        const savedGame = localStorage.getItem('pokemonMemoryGame');
+        if (savedGame) {
+            try {
+                const gameData = JSON.parse(savedGame);
+                if (gameData && Date.now() - new Date(gameData.lastSaved).getTime() < 24 * 60 * 60 * 1000) {
+                    setCards(gameData.cards || []);
+                    setMatchedCards(gameData.matchedCards || []);
+                    setMoves(gameData.moves || 0);
+                    setGameTime(gameData.gameTime || 300);
+                    setScore(gameData.score || 0);
+                    setSelectedPokemons(gameData.selectedPokemons || []);
+                    setGameStarted(true);
+                    
+                    if (gameData.matchedCards.length < gameData.cards.length && gameData.gameTime > 0) {
+                        setIsTimerRunning(true);
+                    } else {
+                        setGameCompleted(true);
+                    }
+                    console.log("💾 Juego cargado desde localStorage");
+                    return;
+                }
+            } catch (error) {
+                console.error("Error cargando juego guardado:", error);
+            }
+        }
+        
+        // Si no hay juego guardado, cargar nuevo juego
+        loadRandomPokemons();
+    }, []);
+
+    // Guardar datos en localStorage cuando cambien
+    useEffect(() => {
+        if (gameStarted && cards.length > 0) {
+            const gameData = {
+                cards,
+                matchedCards,
+                moves,
+                gameTime,
+                score,
+                selectedPokemons,
+                lastSaved: new Date().toISOString()
+            };
+            localStorage.setItem('pokemonMemoryGame', JSON.stringify(gameData));
+        }
+    }, [cards, matchedCards, moves, gameTime, score, selectedPokemons, gameStarted]);
 
     // Función para limpiar TODOS los datos del localStorage
     const cleanAllGameData = () => {
         console.log("🧹 Limpiando TODOS los datos del juego...");
         
-        // Eliminar todas las claves relacionadas con el juego usando delete
-        delete localStorage.selectedPokemons;
-        delete localStorage.matchedCards;
-        delete localStorage.gameProgress;
-        delete localStorage.currentGame;
-        delete localStorage.pokemonMemoryScore;
+        // Eliminar todas las claves relacionadas con el juego
+        localStorage.removeItem('pokemonMemoryGame');
+        localStorage.removeItem('selectedPokemons');
+        localStorage.removeItem('matchedCards');
+        localStorage.removeItem('gameProgress');
+        localStorage.removeItem('currentGame');
+        localStorage.removeItem('pokemonMemoryScore');
         
         console.log("✅ TODOS los datos eliminados del localStorage");
     };
 
     // Cargar Pokémon aleatorios automáticamente
-    useEffect(() => {
-        const loadRandomPokemons = async () => {
-            setLoadingImages(true);
+    const loadRandomPokemons = async () => {
+        setLoadingImages(true);
+        
+        try {
+            // PRIMERO limpiar todos los datos anteriores
+            cleanAllGameData();
             
-            try {
-                // PRIMERO limpiar todos los datos anteriores
-                cleanAllGameData();
+            // Resetear todo el estado a cero
+            setScore(0);
+            setMoves(0);
+            setGameTime(300);
+            setFlippedCards([]);
+            setMatchedCards([]);
+            setGameCompleted(false);
+            
+            const randomPokemons = await fetchRandomPokemons(8);
+            
+            if (randomPokemons.length > 0) {
+                console.log("🎯 Pokémon finales para el juego:", randomPokemons.map(p => p.name));
+                setSelectedPokemons(randomPokemons);
+                setCards(generateCards(randomPokemons));
+                setGameStarted(true);
                 
-                // Resetear todo el estado a cero
-                setScore(0);
-                setMoves(0);
-                setGameTime(0);
-                setFlippedCards([]);
-                setMatchedCards([]);
+                // Iniciar timer
+                setIsTimerRunning(true);
                 
-                const randomPokemons = await fetchRandomPokemons(8);
-                
-                if (randomPokemons.length > 0) {
-                    console.log("🎯 Pokémon finales para el juego:", randomPokemons.map(p => p.name));
-                    setSelectedPokemons(randomPokemons);
-                    setCards(generateCards(randomPokemons));
-                    setGameStarted(true);
-                    
-                    // Iniciar timer
-                    setIsTimerRunning(true);
-                } else {
-                    console.error("❌ No se pudieron cargar Pokémon");
-                    alert('Error al cargar Pokémon. Intenta recargar la página.');
-                }
-            } catch (error) {
-                console.error('Error loading random Pokémon:', error);
-                alert('Error de conexión. Verifica tu internet y recarga la página.');
-            } finally {
-                setLoadingImages(false);
+                // Cambiar tema aleatorio
+                setCurrentTheme(getRandomPokemonTheme());
+            } else {
+                console.error("❌ No se pudieron cargar Pokémon");
+                alert('Error al cargar Pokémon. Intenta recargar la página.');
             }
-        };
-
-        loadRandomPokemons();
-    }, []);
+        } catch (error) {
+            console.error('Error loading random Pokémon:', error);
+            alert('Error de conexión. Verifica tu internet y recarga la página.');
+        } finally {
+            setLoadingImages(false);
+        }
+    };
 
     // Generar las cartas duplicadas y barajadas
     const generateCards = (pokemons) => {
@@ -195,9 +258,9 @@ const Cartas = () => {
 
     // Calcular puntos cuando se encuentra un par
     const calculatePairScore = () => {
-        const basePoints = 50; // Puntos base por encontrar un par
-        const timeBonus = Math.max(10, 30 - Math.floor(gameTime / 10)); // Bonus por tiempo
-        const movesBonus = Math.max(5, 20 - Math.floor(moves / 5)); // Bonus por eficiencia
+        const basePoints = 2; // 2 puntos base por encontrar un par (como solicita el ejercicio)
+        const timeBonus = Math.max(0, 5 - Math.floor(gameTime / 60)); // Bonus por tiempo
+        const movesBonus = Math.max(0, 3 - Math.floor(moves / 10)); // Bonus por eficiencia
         
         const pairScore = basePoints + timeBonus + movesBonus;
         console.log(`🎯 Par encontrado! +${pairScore} puntos (base:${basePoints} + tiempo:${timeBonus} + movimientos:${movesBonus})`);
@@ -208,7 +271,9 @@ const Cartas = () => {
     const handleCardClick = (clickedCard) => {
         if (flippedCards.length === 2 || 
             clickedCard.flipped || 
-            clickedCard.matched) {
+            clickedCard.matched ||
+            !isTimerRunning ||
+            gameCompleted) {
             return;
         }
 
@@ -238,10 +303,12 @@ const Cartas = () => {
                     setMatchedCards(newMatchedCards);
                     setFlippedCards([]);
 
+                    // Verificar si el juego está completo
                     if (newMatchedCards.length === cards.length) {
                         setIsTimerRunning(false);
+                        setGameCompleted(true);
                         // Bonus por completar el juego
-                        const completionBonus = 100;
+                        const completionBonus = 10;
                         setScore(prevScore => prevScore + completionBonus);
                         console.log(`🏆 Juego completado! Bonus de completación: +${completionBonus} puntos`);
                     }
@@ -279,9 +346,11 @@ const Cartas = () => {
                 setFlippedCards([]);
                 setMatchedCards([]);
                 setMoves(0);
-                setGameTime(0);
+                setGameTime(300);
                 setScore(0); // Resetear puntuación a 0
                 setIsTimerRunning(true);
+                setGameCompleted(false);
+                setCurrentTheme(getRandomPokemonTheme());
                 
                 console.log("🎮 Juego reiniciado completamente - Puntuación: 0");
             }
@@ -306,12 +375,13 @@ const Cartas = () => {
             { background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: '#f5576c' },
             { background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: '#4facfe' },
             { background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: '#43e97b' },
-            { background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fa709a' }
+            { background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: '#fa709a' },
+            { background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', color: '#a8edea' },
+            { background: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)', color: '#d299c2' },
+            { background: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', color: '#89f7fe' }
         ];
         return themes[Math.floor(Math.random() * themes.length)];
     };
-
-    const [currentTheme, setCurrentTheme] = useState(getRandomPokemonTheme());
 
     const renderCard = (card) => {
         const isFlipped = card.flipped || card.matched;
@@ -372,6 +442,7 @@ const Cartas = () => {
         <div className="cartas-container" style={{ background: currentTheme.background }}>
             <div className="game-header">
                 <h1>🎮 Encuentra los Pares Pokémon</h1>
+                <p><strong>⏱️ Temporizador: 5 minutos • 💰 2 puntos por par encontrado</strong></p>
                 
                 <div className="pokemon-list-preview">
                     <h4>Pokémon en este juego:</h4>
@@ -386,19 +457,19 @@ const Cartas = () => {
 
                 <div className="game-stats">
                     <div className="stat">
-                        <span className="stat-label">Tiempo:</span>
+                        <span className="stat-label">⏱️ Tiempo:</span>
                         <span className="stat-value">{formatTime(gameTime)}</span>
                     </div>
                     <div className="stat">
-                        <span className="stat-label">Movimientos:</span>
+                        <span className="stat-label">🎯 Movimientos:</span>
                         <span className="stat-value">{moves}</span>
                     </div>
                     <div className="stat">
-                        <span className="stat-label">Pares:</span>
+                        <span className="stat-label">✅ Pares:</span>
                         <span className="stat-value">{matchedCards.length / 2} / {selectedPokemons.length}</span>
                     </div>
                     <div className="stat">
-                        <span className="stat-label">Puntuación:</span>
+                        <span className="stat-label">⭐ Puntuación:</span>
                         <span className="stat-value">{score}</span>
                     </div>
                 </div>
@@ -412,39 +483,43 @@ const Cartas = () => {
                 {cards.map(card => renderCard(card))}
             </div>
 
-            {matchedCards.length === cards.length && cards.length > 0 && (
+            {(gameCompleted || gameTime === 0) && (
                 <div className="victory-message">
                     <div className="victory-content">
-                        <h2>🎉 ¡Felicidades! 🎉</h2>
-                        <p>Has encontrado todos los pares Pokémon</p>
+                        <h2>{gameTime === 0 ? '⏰ ¡Tiempo Agotado!' : '🎉 ¡Felicidades!'}</h2>
                         <p className="victory-stats">
-                            Tiempo: <strong>{formatTime(gameTime)}</strong><br />
-                            Movimientos totales: <strong>{moves}</strong><br />
-                            Puntuación final: <strong>{score}</strong>
+                            ⭐ Puntuación Final: <strong>{score}</strong><br />
+                            ✅ Pares Encontrados: <strong>{matchedCards.length / 2}</strong><br />
+                            🎯 Movimientos Totales: <strong>{moves}</strong><br />
+                            ⏱️ Tiempo {gameTime === 0 ? 'Utilizado' : 'Restante'}: <strong>{formatTime(gameTime)}</strong>
                         </p>
                         <p className="victory-details">
-                            ¡Encontraste {selectedPokemons.length} Pokémon diferentes!<br />
-                            <strong>🎯 ¡Juego completado con éxito!</strong>
+                            {gameTime === 0 
+                                ? 'El tiempo de 5 minutos ha terminado. ¡Inténtalo de nuevo!'
+                                : `¡Has encontrado todos los ${selectedPokemons.length} pares Pokémon!`}
+                            <br />
+                            <strong>💰 Puntuación basada en 2 puntos por par + bonificaciones</strong>
                         </p>
                         <button className="play-again-button" onClick={resetGame}>
-                            🎮 Juego Nuevo
+                            🎮 Jugar Otra Vez
                         </button>
                     </div>
                 </div>
             )}
 
             <div className="game-instructions">
-                <h3>🎯 ¡Juego Aleatorio de Pokémon!</h3>
+                <h3>🎯 ¡Juego de Memoria Pokémon con LocalStorage!</h3>
                 <ul>
-                    <li>✨ <strong>8 Pokémon aleatorios</strong> en cada juego</li>
-                    <li>⏱️ <strong>Tiempo medido</strong> - completa más rápido para más puntos</li>
-                    <li>💰 <strong>Puntos por pares</strong> - Gana puntos cada vez que encuentres un par</li>
-                    <li>⚡ <strong>Bonus por eficiencia</strong> - Menos movimientos = más puntos</li>
-                    <li>🏆 <strong>Bonus final</strong> - Puntos extra por completar el juego</li>
-                    <li>🔄 <strong>Reinicio completo</strong> - Cada juego comienza desde cero</li>
+                    <li>⏱️ <strong>Temporizador de 5 minutos</strong> - El juego termina cuando se acaba el tiempo</li>
+                    <li>💰 <strong>2 puntos por cada par encontrado</strong> - Como solicita el ejercicio</li>
+                    <li>💾 <strong>LocalStorage activado</strong> - Tu progreso se guarda automáticamente</li>
+                    <li>⭐ <strong>Bonificaciones extra</strong> - Por tiempo restante y eficiencia</li>
+                    <li>🎲 <strong>Pokémon aleatorios</strong> - 8 Pokémon diferentes en cada juego</li>
+                    <li>🔄 <strong>Reinicio completo</strong> - Nuevos Pokémon cada vez</li>
+                    <li>💡 <strong>Progreso guardado</strong> - Puedes continuar donde lo dejaste</li>
                 </ul>
                 <div className="fun-fact">
-                    <strong>💡 Dato curioso:</strong> ¡Encuentra los pares rápidamente para maximizar tu puntuación!
+                    <strong>💡 Dato curioso:</strong> ¡Encuentra los pares rápidamente para maximizar tu puntuación con las bonificaciones por tiempo!
                 </div>
             </div>
         </div>

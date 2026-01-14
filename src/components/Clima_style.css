@@ -1,0 +1,250 @@
+/* components/Clima_style.css */
+.clima-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    color: white;
+}
+
+.clima-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.clima-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.clima-demo-warning {
+    background: rgba(255, 193, 7, 0.9);
+    color: #333;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.clima-input {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.clima-button {
+    padding: 12px 25px;
+    background: #00b894;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.clima-button:hover {
+    background: #00a085;
+    transform: translateY(-2px);
+}
+
+.ciudades-rapidas {
+    margin-top: 20px;
+}
+
+.ciudades-rapidas p {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.ciudades-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.ciudad-rapida-btn {
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.ciudad-rapida-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.clima-info {
+    text-align: center;
+}
+
+.clima-ciudad {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.clima-ciudad h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.demo-badge {
+    background: #ff6b6b;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.clima-temperatura {
+    margin-bottom: 20px;
+}
+
+.temp-actual {
+    font-size: 4rem;
+    font-weight: bold;
+    display: block;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.temp-sensacion {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.clima-descripcion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.clima-descripcion img {
+    width: 80px;
+    height: 80px;
+}
+
+.clima-descripcion p {
+    font-size: 1.3rem;
+    text-transform: capitalize;
+    margin: 0;
+}
+
+.clima-detalles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.detalle-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.clima-info-demo {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.clima-info-demo a {
+    color: #ffeaa7;
+    text-decoration: underline;
+}
+
+.clima-info-demo a:hover {
+    color: #fdcb6e;
+}
+
+.clima-loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.clima-error {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+    .clima-container {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .clima-input {
+        width: 100%;
+        max-width: 300px;
+        margin-bottom: 10px;
+    }
+    
+    .clima-detalles {
+        grid-template-columns: 1fr;
+    }
+    
+    .temp-actual {
+        font-size: 3rem;
+    }
+    
+    .ciudades-botones {
+        justify-content: center;
+    }
+    
+    .ciudad-rapida-btn {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+    }
+}
