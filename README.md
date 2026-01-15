@@ -29,13 +29,6 @@ The Pokémon Explorer is a modern web application designed to provide a comprehe
 -   ⚡ **Efficient Data Fetching**: Leverages asynchronous API calls for quick loading of Pokémon data.
 -   🔄 **Client-Side Routing**: Smooth navigation between different sections of the application without full page reloads.
 
-## 🖥️ Screenshots
-
-![Screenshot 1](path-to-screenshot-of-pokemon-list) <!-- TODO: Add actual screenshots of the application -->
-*Browse a comprehensive list of Pokémon.*
-
-![Screenshot 2](path-to-screenshot-of-pokemon-detail) <!-- TODO: Add actual screenshots of a detailed pokemon page -->
-*View detailed information for individual Pokémon.*
 
 ## 🛠️ Tech Stack
 
